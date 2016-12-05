@@ -3,8 +3,8 @@ import sys
 
 def hash(key, n):
     h = hashlib.md5()
-    h.update(key)
-    h.update("{}".format(n))
+    h.update(key.encode())
+    h.update("{}".format(n).encode())
     return h.hexdigest()
 
 prefix = sys.stdin.readline().rstrip()
@@ -29,5 +29,10 @@ while True:
         sys.stdout.write(".")
         sys.stdout.flush()
     n += 1
+
 print(answer1)
-print(answer2)
+
+answer2_str = ""
+for i in range(8):
+    answer2_str += answer2[i]
+print(answer2_str)
