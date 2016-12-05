@@ -15,7 +15,8 @@ fn main() {
     io::stdin().read_line(&mut prefix).unwrap();
     let mut n = 0u64;
     let mut answer1 = String::new();
-    let mut answer2 = vec!['x';8];
+    let mut answer2 = vec![' ';8];
+    let mut answer2_letters = 0;
     loop {
         let out = hash(prefix.trim(), n);
         if out.starts_with("00000") {
@@ -30,12 +31,13 @@ fn main() {
             }
 
             if let Ok(pos) = format!("{}", char5).parse::<usize>() {
-                if answer2.get(pos) == Some(&'x') {
+                if answer2.get(pos) == Some(&' ') {
                     answer2[pos] = char6;
+                    answer2_letters += 1;
+                    if answer2_letters == 8 {
+                        break;
+                    }
                 }
-            }
-            if answer2.iter().find(|x| **x == 'x').is_none() {
-                break;
             }
         }
         if n % 100000 == 0 {
