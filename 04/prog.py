@@ -1,6 +1,12 @@
 import re
 import sys
 
+def rotate(c, n):
+    a = ord(c) - ord('a')
+    a += n
+    a %= 26
+    return chr(ord('a') + a)
+
 pattern = re.compile('^(.*)-([0-9]+)\[([^\]]+)\]$')
 
 sum = 0
@@ -28,5 +34,13 @@ while True:
     if expected_cksum == checksum:
         sector_num = int(sector)
         sum += sector_num
+
+        decrypted = ""
+        for c in room:
+            if c == "-":
+                decrypted += " "
+            else:
+                decrypted += rotate(c, sector_num)
+        print("{}: {}".format(sector, decrypted))
 
 print(sum)
