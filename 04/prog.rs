@@ -4,7 +4,7 @@ use std::iter::FromIterator;
 #[derive(Debug)]
 struct RoomInfo {
     room: String,
-    sector: u64, 
+    sector: u32, 
     checksum: String,
 }
 
@@ -47,12 +47,20 @@ fn parse_line(line: &str) -> RoomInfo {
     unreachable!();
 }
 
+fn rotate(c: char, n: u32) -> char {
+    let mut a = (c as u32) - ('a' as u32);
+    a += n;
+    a %= 26;
+    a += 'a' as u32;
+    std::char::from_u32(a).unwrap()
+}
+
 fn make_checksum(s: &str) -> String {
     //use std::collections::btree_map::*;
     use std::cmp::Ordering;
    
-    //let mut freq = BTreeMap::<char, u64>::new();
-    let mut pairs = Vec::<(char, u64)>::new();
+    //let mut freq = BTreeMap::<char, u32>::new();
+    let mut pairs = Vec::<(char, u32)>::new();
 
     for c in s.chars() {
         if c == '-' { continue; }
@@ -74,7 +82,7 @@ fn make_checksum(s: &str) -> String {
         }
     }
 
-    //let mut pairs = freq.into_iter().collect::<Vec<(char, u64)>>();
+    //let mut pairs = freq.into_iter().collect::<Vec<(char, u32)>>();
     pairs.sort_by(|a, b| {
         let num_cmp = b.1.cmp(&a.1);
         if num_cmp == Ordering::Equal {
@@ -106,6 +114,15 @@ fn main() {
 
         if expected_checksum == info.checksum {
             sum += info.sector;
+            let mut decoded = String::new();
+            for c in info.room.chars() {
+                if c == '-' {
+                    decoded.push(' ');
+                } else {
+                    decoded.push(rotate(c, info.sector));
+                }
+            }
+            println!("{}: {}", info.sector, decoded);
         }
         line.clear();
     }
