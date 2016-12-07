@@ -1,6 +1,6 @@
 use std::io;
 
-fn check_abba(chars: &[char]) -> bool {
+fn has_abba(chars: &[char]) -> bool {
     for window in chars.windows(4) {
         if window[0] == window[3] && window[1] == window[2] && window[0] != window[1] {
             return true;
@@ -9,11 +9,11 @@ fn check_abba(chars: &[char]) -> bool {
     false
 }
 
-fn check_aba_bab(outsides: &[Vec<char>], insides: &[Vec<char>]) -> bool {
+fn has_aba_bab(outsides: &[Vec<char>], insides: &[Vec<char>]) -> bool {
     for chars in outsides {
         for window in chars.windows(3) {
             if window[0] == window[2] && window[0] != window[1] {
-                if check_bab(insides, window[0], window[1]) {
+                if has_bab(insides, window[0], window[1]) {
                     return true;
                 }
             }
@@ -22,7 +22,7 @@ fn check_aba_bab(outsides: &[Vec<char>], insides: &[Vec<char>]) -> bool {
     false
 }
 
-fn check_bab(insides: &[Vec<char>], a: char, b: char) -> bool {
+fn has_bab(insides: &[Vec<char>], a: char, b: char) -> bool {
     for chars in insides {
         for window in chars.windows(3) {
             if window[0] == b && window[1] == a && window[2] == b {
@@ -58,26 +58,26 @@ fn main() {
             }
         }
 
-        let mut valid = false;
+        let mut part1_match = false;
         for chars in &outsides {
-            if check_abba(&chars) {
-                valid = true;
+            if has_abba(&chars) {
+                part1_match = true;
                 break;
             }
         }
-        if valid {
+        if part1_match {
             for chars in &insides {
-                if check_abba(&chars) {
-                    valid = false;
+                if has_abba(&chars) {
+                    part1_match = false;
                     break;
                 }
             }
         }
-        if valid {
+        if part1_match {
             count1 += 1;
         }
 
-        if check_aba_bab(&outsides, &insides) {
+        if has_aba_bab(&outsides, &insides) {
             count2 += 1;
         }
 

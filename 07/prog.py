@@ -31,22 +31,22 @@ while True:
     if not line: break
 
     parts = r.findall(line)
-    inside = True # inside brackets or not?
-    valid = False
-    for part in parts:
-        inside = not inside
-        if has_abba(part):
-            if inside:
-                valid = False
-                break
-            else:
-                valid = True
-
-    if valid:
-        count1 += 1
-
     outsides = [parts[i] for i in range(0,len(parts),2)]
     insides  = [parts[i] for i in range(1,len(parts),2)]
+
+    part1_match = False
+    for text in outsides:
+        if has_abba(text):
+            part1_match = True
+            break
+    if part1_match:
+        for text in insides:
+            if has_abba(text):
+                part1_match = False
+                break
+    if part1_match:
+        count1 += 1
+
     if has_aba_bab(outsides, insides):
         count2 += 1
 
