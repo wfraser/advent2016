@@ -25,10 +25,11 @@ fn main() {
                 },
                 "rotate" => {
                     assert_eq!("by", parts[3]);
+                    let n: usize = parts[4].parse().unwrap();
+
                     match parts[1] {
                         "row" => {
                             let y: usize = parts[2].split("=").skip(1).next().unwrap().parse().unwrap();
-                            let n: usize = parts[4].parse().unwrap();
 
                             let mut row = [false;50];
                             for i in 0..50 {
@@ -44,7 +45,6 @@ fn main() {
                         },
                         "column" => {
                             let x: usize = parts[2].split("=").skip(1).next().unwrap().parse().unwrap();
-                            let n: usize = parts[4].parse().unwrap();
 
                             let mut column = [false;6];
                             for i in 0..6 {
@@ -54,9 +54,7 @@ fn main() {
                                 }
                                 column[dest] = screen[x][i];
                             }
-                            for i in 0..6 {
-                                screen[x][i] = column[i];
-                            }
+                            screen[x] = column;
                         },
                         _ => panic!("unknown rotate: {}", parts[1])
                     }
