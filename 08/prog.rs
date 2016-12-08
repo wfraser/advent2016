@@ -1,11 +1,28 @@
-use std::io;
+fn print_screen(screen: &[[bool;6];50]) {
+    for y in 0..6 {
+        for x in 0..50 {
+            if screen[x][y] {
+                print!("#");
+            } else {
+                print!(".");
+            }
+        }
+        println!("");
+    }
+}
 
 fn main() {
+    let animate = std::env::args()
+        .skip(1)
+        .next()
+        .and_then(|x| Some(x == "--animate"))
+        .unwrap_or(false);
+
     let mut count = 0;
     let mut screen = [[false;6];50];
 
     let mut line = String::new();
-    while let Ok(n) = io::stdin().read_line(&mut line) {
+    while let Ok(n) = std::io::stdin().read_line(&mut line) {
         if n == 0 { break; }
 
         {
@@ -63,18 +80,22 @@ fn main() {
             }
         }
 
+        if animate {
+            print!("\x1b[2J\x1b[H"); // clear screen and set cursor to 0,0
+            print_screen(&screen);
+            std::thread::sleep(std::time::Duration::from_millis(50));
+        }
         line.clear();
+    }
+    if !animate {
+        print_screen(&screen);
     }
     for y in 0..6 {
         for x in 0..50 {
             if screen[x][y] {
-                print!("#");
                 count += 1;
-            } else {
-                print!(".");
             }
         }
-        println!("");
     }
     println!("{}", count);
 }
