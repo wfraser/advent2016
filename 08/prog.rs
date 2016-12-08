@@ -1,10 +1,10 @@
 const WIDTH: usize = 50;
 const HEIGHT: usize = 6;
 
-fn print_screen(screen: &[bool], width: usize, height: usize) {
-    for y in 0..height {
-        for x in 0..width {
-            if screen[x + y*width] {
+fn print_screen(screen: &[bool; WIDTH * HEIGHT]) {
+    for y in 0..HEIGHT {
+        for x in 0..WIDTH {
+            if screen[x + y*WIDTH] {
                 print!("#");
             } else {
                 print!(".");
@@ -87,13 +87,13 @@ fn main() {
 
         if animate {
             print!("\x1b[2J\x1b[H"); // clear screen and set cursor to 0,0
-            print_screen(&screen, WIDTH, HEIGHT);
+            print_screen(&screen);
             std::thread::sleep(std::time::Duration::from_millis(50));
         }
         line.clear();
     }
     if !animate {
-        print_screen(&screen, WIDTH, HEIGHT);
+        print_screen(&screen);
     }
     for i in 0..WIDTH*HEIGHT {
         if screen[i] {
