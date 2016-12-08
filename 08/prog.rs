@@ -1,7 +1,10 @@
-fn print_screen(screen: &[[bool;6];50]) {
-    for y in 0..6 {
-        for x in 0..50 {
-            if screen[x][y] {
+const WIDTH: usize = 50;
+const HEIGHT: usize = 6;
+
+fn print_screen(screen: &[bool], width: usize, height: usize) {
+    for y in 0..height {
+        for x in 0..width {
+            if screen[x + y*width] {
                 print!("#");
             } else {
                 print!(".");
@@ -19,7 +22,7 @@ fn main() {
         .unwrap_or(false);
 
     let mut count = 0;
-    let mut screen = [[false;6];50];
+    let mut screen = [false; WIDTH * HEIGHT];
 
     let mut line = String::new();
     while let Ok(n) = std::io::stdin().read_line(&mut line) {
@@ -36,7 +39,7 @@ fn main() {
 
                     for i in 0..x {
                         for j in 0..y {
-                            screen[i][j] = true;
+                            screen[i + j*WIDTH] = true;
                         }
                     }
                 },
@@ -48,30 +51,32 @@ fn main() {
                         "row" => {
                             let y: usize = parts[2].split("=").skip(1).next().unwrap().parse().unwrap();
 
-                            let mut row = [false;50];
-                            for i in 0..50 {
+                            let mut row = [false; WIDTH];
+                            for i in 0..WIDTH {
                                 let mut dest = i+n;
-                                if dest >= 50 {
-                                    dest -= 50;
+                                if dest >= WIDTH {
+                                    dest -= WIDTH;
                                 }
-                                row[dest] = screen[i][y];
+                                row[dest] = screen[i + y*WIDTH];
                             }
-                            for i in 0..50 {
-                                screen[i][y] = row[i];
+                            for i in 0..WIDTH {
+                                screen[i + y*WIDTH] = row[i];
                             }
                         },
                         "column" => {
                             let x: usize = parts[2].split("=").skip(1).next().unwrap().parse().unwrap();
 
-                            let mut column = [false;6];
-                            for i in 0..6 {
+                            let mut column = [false; HEIGHT];
+                            for i in 0..HEIGHT {
                                 let mut dest = i+n;
-                                if dest >= 6 {
-                                    dest -= 6;
+                                if dest >= HEIGHT {
+                                    dest -= HEIGHT;
                                 }
-                                column[dest] = screen[x][i];
+                                column[dest] = screen[x + i*WIDTH];
                             }
-                            screen[x] = column;
+                            for i in 0..HEIGHT {
+                                screen[x + i*WIDTH] = column[i];
+                            }
                         },
                         _ => panic!("unknown rotate: {}", parts[1])
                     }
@@ -82,19 +87,17 @@ fn main() {
 
         if animate {
             print!("\x1b[2J\x1b[H"); // clear screen and set cursor to 0,0
-            print_screen(&screen);
+            print_screen(&screen, WIDTH, HEIGHT);
             std::thread::sleep(std::time::Duration::from_millis(50));
         }
         line.clear();
     }
     if !animate {
-        print_screen(&screen);
+        print_screen(&screen, WIDTH, HEIGHT);
     }
-    for y in 0..6 {
-        for x in 0..50 {
-            if screen[x][y] {
-                count += 1;
-            }
+    for i in 0..WIDTH*HEIGHT {
+        if screen[i] {
+            count += 1;
         }
     }
     println!("{}", count);
