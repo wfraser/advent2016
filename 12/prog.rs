@@ -1,5 +1,34 @@
-use std::collections::BTreeMap;
 use std::io;
+
+#[derive(Debug)]
+struct Registers {
+    a: i64,
+    b: i64,
+    c: i64,
+    d: i64,
+}
+
+impl Registers {
+    pub fn get(&self, name: &str) -> i64 {
+        match name {
+            "a" => self.a,
+            "b" => self.b,
+            "c" => self.c,
+            "d" => self.d,
+            _ => panic!("invalid register name {:?}", name)
+        }
+    }
+
+    pub fn get_mut(&mut self, name: &str) -> &mut i64 {
+        match name {
+            "a" => &mut self.a,
+            "b" => &mut self.b,
+            "c" => &mut self.c,
+            "d" => &mut self.d,
+            _ => panic!("invalid register name {:?}", name)
+        }
+    }
+}
 
 #[derive(Debug)]
 enum Value {
@@ -8,9 +37,9 @@ enum Value {
 }
 
 impl Value {
-    pub fn value(&self, regs: &mut BTreeMap<String, i64>) -> i64 {
+    pub fn value(&self, regs: &mut Registers) -> i64 {
         match self {
-            &Value::Register(ref name) => regs[name],
+            &Value::Register(ref name) => regs.get(name),
             &Value::Literal(n) => n,
         }
     }
@@ -25,7 +54,7 @@ impl Value {
 }
 
 trait Instruction {
-    fn execute(&self, regs: &mut BTreeMap<String, i64>) -> isize;
+    fn execute(&self, regs: &mut Registers) -> isize;
 }
 
 #[derive(Debug)]
@@ -44,9 +73,9 @@ impl CpyInstr {
 }
 
 impl Instruction for CpyInstr {
-    fn execute(&self, regs: &mut BTreeMap<String, i64>) -> isize {
+    fn execute(&self, regs: &mut Registers) -> isize {
         let v = self.value.value(regs);
-        *regs.get_mut(self.dest_register.as_str()).unwrap() = v;
+        *regs.get_mut(self.dest_register.as_str()) = v;
         1
     }
 }
@@ -67,8 +96,8 @@ impl SuccInstr {
 }
 
 impl Instruction for SuccInstr {
-    fn execute(&self, regs: &mut BTreeMap<String, i64>) -> isize {
-        *regs.get_mut(self.register.as_str()).unwrap() += self.offset;
+    fn execute(&self, regs: &mut Registers) -> isize {
+        *regs.get_mut(self.register.as_str()) += self.offset;
         1
     }
 }
@@ -89,7 +118,7 @@ impl JnzInstr {
 }
 
 impl Instruction for JnzInstr {
-    fn execute(&self, regs: &mut BTreeMap<String, i64>) -> isize {
+    fn execute(&self, regs: &mut Registers) -> isize {
         let v = self.value.value(regs);
         if v != 0 {
             self.offset
@@ -99,7 +128,7 @@ impl Instruction for JnzInstr {
     }
 }
 
-fn run(instructions: &[Box<Instruction>], registers: &mut BTreeMap<String, i64>) {
+fn run(instructions: &[Box<Instruction>], registers: &mut Registers) {
     let mut i = 0isize;
     loop {
         let offset = instructions[i as usize].execute(registers);
@@ -132,21 +161,23 @@ fn main() {
         line.clear();
     }
 
-    let mut registers = BTreeMap::new();
-    registers.insert("a".to_owned(), 0);
-    registers.insert("b".to_owned(), 0);
-    registers.insert("c".to_owned(), 0);
-    registers.insert("d".to_owned(), 0);
+    let mut registers = Registers {
+        a: 0,
+        b: 0,
+        c: 0,
+        d: 0,
+    };
+    
+    run(&instructions, &mut registers);
+    println!("{}", registers.a);
+
+    registers = Registers {
+        a: 0,
+        b: 0,
+        c: 1,
+        d: 0,
+    };
 
     run(&instructions, &mut registers);
-    println!("{}", registers["a"]);
-
-    registers.insert("a".to_owned(), 0);
-    registers.insert("b".to_owned(), 0);
-    registers.insert("c".to_owned(), 1);
-    registers.insert("d".to_owned(), 0);
-
-    run(&instructions, &mut registers);
-    println!("{}", registers["a"]);
+    println!("{}", registers.a);
 }
-
