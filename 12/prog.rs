@@ -2,8 +2,11 @@ use std::collections::BTreeMap;
 use std::io;
 
 #[derive(Debug)]
+enum Opcode { CPY, INC, DEC, JNZ }
+
+#[derive(Debug)]
 struct Instruction {
-    opcode: String,
+    opcode: Opcode,
     arg1: Option<String>,
     arg2: Option<String>,
 }
@@ -18,21 +21,21 @@ fn value(s: &str, regs: &BTreeMap<String, i64>) -> i64 {
 
 impl Instruction {
     fn execute(&self, regs: &mut BTreeMap<String, i64>) -> isize {
-        match self.opcode.as_str() {
-            "cpy" => {
+        match self.opcode {
+            Opcode::CPY => {
                 let v = value(self.arg1.as_ref().unwrap(), regs);
                 *regs.get_mut(self.arg2.as_ref().unwrap()).unwrap() = v;
                 1
             },
-            "inc" => {
+            Opcode::INC => {
                 *regs.get_mut(self.arg1.as_ref().unwrap()).unwrap() += 1;
                 1
             },
-            "dec" => {
+            Opcode::DEC => {
                 *regs.get_mut(self.arg1.as_ref().unwrap()).unwrap() -= 1;
                 1
             },
-            "jnz" => {
+            Opcode::JNZ => {
                 let v = value(self.arg1.as_ref().unwrap(), regs);
                 if v != 0 {
                     self.arg2.as_ref().unwrap().parse().unwrap()
@@ -40,7 +43,6 @@ impl Instruction {
                     1
                 }
             }
-            _ => panic!("unknown opcode {:?}", self.opcode)
         }
     }
 }
@@ -63,7 +65,13 @@ fn main() {
         if n == 0 { break; }
         {
             let mut words = line.trim().split(" ");
-            let opcode = words.next().unwrap().to_owned();
+            let opcode = match words.next().unwrap() {
+                "cpy" => Opcode::CPY,
+                "inc" => Opcode::INC,
+                "dec" => Opcode::DEC,
+                "jnz" => Opcode::JNZ,
+                other => panic!("unknown opcode {:?}", other)
+            };
             let arg1 = words.next().map(|s| s.to_owned());
             let arg2 = words.next().map(|s| s.to_owned());
             instructions.push(Instruction {
