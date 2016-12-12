@@ -2,52 +2,104 @@ use std::collections::BTreeMap;
 use std::io;
 
 #[derive(Debug)]
-enum Opcode { CPY, INC, DEC, JNZ }
-
-#[derive(Debug)]
-struct Instruction {
-    opcode: Opcode,
-    arg1: Option<String>,
-    arg2: Option<String>,
+enum Value {
+    Register(String),
+    Literal(i64),
 }
 
-fn value(s: &str, regs: &BTreeMap<String, i64>) -> i64 {
-    if let Ok(n) = s.parse() {
-        n
-    } else {
-        regs[s]
+impl Value {
+    pub fn value(&self, regs: &mut BTreeMap<String, i64>) -> i64 {
+        match self {
+            &Value::Register(ref name) => regs[name],
+            &Value::Literal(n) => n,
+        }
     }
-}
 
-impl Instruction {
-    fn execute(&self, regs: &mut BTreeMap<String, i64>) -> isize {
-        match self.opcode {
-            Opcode::CPY => {
-                let v = value(self.arg1.as_ref().unwrap(), regs);
-                *regs.get_mut(self.arg2.as_ref().unwrap()).unwrap() = v;
-                1
-            },
-            Opcode::INC => {
-                *regs.get_mut(self.arg1.as_ref().unwrap()).unwrap() += 1;
-                1
-            },
-            Opcode::DEC => {
-                *regs.get_mut(self.arg1.as_ref().unwrap()).unwrap() -= 1;
-                1
-            },
-            Opcode::JNZ => {
-                let v = value(self.arg1.as_ref().unwrap(), regs);
-                if v != 0 {
-                    self.arg2.as_ref().unwrap().parse().unwrap()
-                } else {
-                    1
-                }
-            }
+    pub fn parse(s: String) -> Value {
+        if let Ok(n) = s.parse::<i64>() {
+            Value::Literal(n)
+        } else {
+            Value::Register(s)
         }
     }
 }
 
-fn run(instructions: &[Instruction], registers: &mut BTreeMap<String, i64>) {
+trait Instruction {
+    fn execute(&self, regs: &mut BTreeMap<String, i64>) -> isize;
+}
+
+#[derive(Debug)]
+struct CpyInstr {
+    value: Value,
+    dest_register: String,
+}
+
+impl CpyInstr {
+    pub fn new(value: String, dest_register: String) -> CpyInstr {
+        CpyInstr {
+            value: Value::parse(value),
+            dest_register: dest_register,
+        }
+    }
+}
+
+impl Instruction for CpyInstr {
+    fn execute(&self, regs: &mut BTreeMap<String, i64>) -> isize {
+        let v = self.value.value(regs);
+        *regs.get_mut(self.dest_register.as_str()).unwrap() = v;
+        1
+    }
+}
+
+#[derive(Debug)]
+struct SuccInstr {
+    register: String,
+    offset: i64,
+}
+
+impl SuccInstr {
+    pub fn new(register: String, offset: i64) -> SuccInstr {
+        SuccInstr {
+            register: register,
+            offset: offset,
+        }
+    }
+}
+
+impl Instruction for SuccInstr {
+    fn execute(&self, regs: &mut BTreeMap<String, i64>) -> isize {
+        *regs.get_mut(self.register.as_str()).unwrap() += self.offset;
+        1
+    }
+}
+
+#[derive(Debug)]
+struct JnzInstr {
+    value: Value,
+    offset: isize,
+}
+
+impl JnzInstr {
+    pub fn new(value: String, offset: String) -> JnzInstr {
+        JnzInstr {
+            value: Value::parse(value),
+            offset: offset.parse().unwrap(),
+        }
+    }
+}
+
+impl Instruction for JnzInstr {
+    fn execute(&self, regs: &mut BTreeMap<String, i64>) -> isize {
+        let v = self.value.value(regs);
+        if v != 0 {
+            self.offset
+        } else {
+            1
+        }
+    }
+}
+
+fn run(instructions: &[Box<Instruction>], registers: &mut BTreeMap<String, i64>) {
     let mut i = 0isize;
     loop {
         let offset = instructions[i as usize].execute(registers);
@@ -65,20 +117,17 @@ fn main() {
         if n == 0 { break; }
         {
             let mut words = line.trim().split(" ");
-            let opcode = match words.next().unwrap() {
-                "cpy" => Opcode::CPY,
-                "inc" => Opcode::INC,
-                "dec" => Opcode::DEC,
-                "jnz" => Opcode::JNZ,
+            let opcode = words.next().unwrap();
+            let arg1: String = words.next().unwrap().to_owned();
+            let arg2: Option<String> = words.next().map(|x| x.to_owned());
+            let instr: Box<Instruction> = match opcode {
+                "cpy" => Box::new(CpyInstr::new(arg1, arg2.unwrap())),
+                "inc" => Box::new(SuccInstr::new(arg1, 1)),
+                "dec" => Box::new(SuccInstr::new(arg1, -1)),
+                "jnz" => Box::new(JnzInstr::new(arg1, arg2.unwrap())),
                 other => panic!("unknown opcode {:?}", other)
             };
-            let arg1 = words.next().map(|s| s.to_owned());
-            let arg2 = words.next().map(|s| s.to_owned());
-            instructions.push(Instruction {
-                opcode: opcode,
-                arg1: arg1,
-                arg2: arg2,
-            });
+            instructions.push(instr);
         }
         line.clear();
     }
