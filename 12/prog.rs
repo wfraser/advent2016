@@ -37,7 +37,7 @@ enum Value {
 }
 
 impl Value {
-    pub fn value(&self, regs: &mut Registers) -> i64 {
+    pub fn get(&self, regs: &Registers) -> i64 {
         match self {
             &Value::Register(ref name) => regs.get(name),
             &Value::Literal(n) => n,
@@ -74,7 +74,7 @@ impl CpyInstr {
 
 impl Instruction for CpyInstr {
     fn execute(&self, regs: &mut Registers) -> isize {
-        let v = self.value.value(regs);
+        let v = self.value.get(regs);
         *regs.get_mut(self.dest_register.as_str()) = v;
         1
     }
@@ -119,7 +119,7 @@ impl JnzInstr {
 
 impl Instruction for JnzInstr {
     fn execute(&self, regs: &mut Registers) -> isize {
-        let v = self.value.value(regs);
+        let v = self.value.get(regs);
         if v != 0 {
             self.offset
         } else {
