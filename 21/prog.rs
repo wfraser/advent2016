@@ -81,6 +81,21 @@ impl Op {
     }
 }
 
+#[derive(Debug)]
+struct ParseErr(&'static str);
+
+impl std::fmt::Display for ParseErr {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "parse error: {}", self.0)
+    }
+}
+
+impl Error for ParseErr {
+    fn description(&self) -> &'static str {
+        "parse error"
+    }
+}
+
 impl<'a> TryInto<Op> for &'a str {
     type Err = Box<Error>;
     fn try_into(self) -> Result<Op, Self::Err> {
@@ -88,23 +103,25 @@ impl<'a> TryInto<Op> for &'a str {
         if self.starts_with("swap position") {
             Ok(Op::SwapPosition(words[2].parse()?, words[5].parse()?))
         } else if self.starts_with("swap letter") {
-            Ok(Op::SwapLetter(words[2].chars().next().unwrap(), words[5].chars().next().unwrap()))
+            Ok(Op::SwapLetter(
+                words[2].chars().next().ok_or(ParseErr("empty words[2]"))?,
+                words[5].chars().next().ok_or(ParseErr("empty words[5]"))?))
         } else if self.starts_with("rotate ") {
             if words[1] == "left" {
                 Ok(Op::RotateSteps(words[2].parse()?))
             } else if words[1] == "right" {
                 Ok(Op::RotateSteps(words[2].parse::<i32>()? * -1))
             } else if words[1] == "based" {
-                Ok(Op::RotateLetter(words[6].chars().next().unwrap()))
+                Ok(Op::RotateLetter(words[6].chars().next().ok_or(ParseErr("empty words[6]"))?))
             } else {
-                panic!("unknown reverse operation {}", self)
+                Err(Box::new(ParseErr("unknown reverse operation")))
             }
         } else if self.starts_with("reverse") {
             Ok(Op::Reverse(words[2].parse()?, words[4].parse()?))
         } else if self.starts_with("move") {
             Ok(Op::Move(words[2].parse()?, words[5].parse()?))
         } else {
-            panic!("unknown operation {}", self);
+            Err(Box::new(ParseErr("unknown operation")))
         }
     }
 }
@@ -117,8 +134,7 @@ fn main() {
         match line.trim().try_into() {
             Ok(op) => ops.push(op),
             Err(e) => {
-                println!("error parsing {:?}: {}", line, e);
-                break;
+                panic!("error parsing {:?}: {}", line, e);
             }
         }
         line.clear();
