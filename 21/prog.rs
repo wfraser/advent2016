@@ -67,7 +67,7 @@ impl Op {
             },
             Op::Reverse(start_pos, end_pos) => {
                 let mut mid = x.split_off(start_pos as usize);
-                let mut end = mid.split_off(end_pos as usize - start_pos as usize);
+                let mut end = mid.split_off(1 + end_pos as usize - start_pos as usize);
                 for c in mid.iter().rev() {
                     x.push(*c);
                 }
