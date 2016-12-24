@@ -25,19 +25,21 @@ impl BlockedIPs {
         }
     }
 
+    /// Check whether a given IP is blocked.
+    /// If it is not, returns None.
+    /// If it is, returns the last IP address in the range that blocks it.
     pub fn contains(&self, x: u32) -> Option<u32> {
-        let mut max = None;
         for pair in self.ranges.iter() {
             if pair.0 > x {
                 break;
             } else {
                 let end = pair.1;
-                if max.is_none() || max.unwrap() < end {
-                    max = Some(end);
+                if end >= x {
+                    return Some(end);
                 }
             }
         }
-        max
+        None
     }
 }
 
@@ -61,23 +63,11 @@ fn main() {
     let mut search = 0u32;
     loop {
         match blocked.contains(search) {
-            Some(next) => {
-                if next < search {
-                    if first {
-                        println!("{}", search);
-                        first = false;
-                    }
-                    count += 1;
-                    if search == std::u32::MAX {
-                        break;
-                    }
-                    search += 1;
-                } else {
-                    if next == std::u32::MAX {
-                        break;
-                    }
-                    search = next + 1;
+            Some(end) => {
+                if end == std::u32::MAX {
+                    break;
                 }
+                search = end + 1;
             },
             None => {
                 if first {
