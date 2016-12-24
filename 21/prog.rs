@@ -4,7 +4,7 @@ use std::convert::TryInto;
 use std::error::Error;
 use std::io;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 enum Op {
     SwapPosition(u32, u32),
     SwapLetter(char, char),
@@ -39,7 +39,7 @@ fn rotate<T: Copy>(x: &mut Vec<T>, n: isize) {
 }
 
 impl Op {
-    fn run(&self, x: &mut Vec<char>) {
+    fn run(&self, x: &mut Vec<char>, rev: bool) {
         match *self {
             Op::SwapPosition(src, dst) => {
                 swap(x, src as usize, dst as usize);
@@ -53,17 +53,35 @@ impl Op {
                     panic!("letter not found");
                 }
             },
-            Op::RotateSteps(num) => {
+            Op::RotateSteps(mut num) => {
+                if rev { num *= -1; }
                 rotate(x, num as isize);
             },
             Op::RotateLetter(ch) => {
                 let pos = x.iter().position(|c| c == &ch).unwrap();
-                let n = if pos >= 4 {
-                    pos + 2
+                if rev {
+                    //FIXME: not sure how to come up with the general pattern yet.
+                    assert_eq!(8, x.len());
+                    let n = match pos {
+                        0 => 9,
+                        1 => 1,
+                        2 => 6,
+                        3 => 2,
+                        4 => 7,
+                        5 => 3,
+                        6 => 8,
+                        7 => 4,
+                        _ => unreachable!(),
+                    };
+                    rotate(x, n);
                 } else {
-                    pos + 1
-                };
-                rotate(x, n as isize * -1);
+                    let n = if pos >= 4 {
+                        pos + 2
+                    } else {
+                        pos + 1
+                    };
+                    rotate(x, n as isize * -1);
+                }
             },
             Op::Reverse(start_pos, end_pos) => {
                 let mut mid = x.split_off(start_pos as usize);
@@ -73,7 +91,12 @@ impl Op {
                 }
                 x.append(&mut end);
             },
-            Op::Move(pos1, pos2) => {
+            Op::Move(mut pos1, mut pos2) => {
+                if rev {
+                    let tmp = pos1;
+                    pos1 = pos2;
+                    pos2 = tmp;
+                }
                 let c = x.remove(pos1 as usize);
                 x.insert(pos2 as usize, c);
             }
@@ -141,10 +164,16 @@ fn main() {
     }
 
     let mut password = "abcdefgh".chars().collect::<Vec<char>>();
-    for op in ops {
+    for op in ops.iter() {
         //print!("{:?}: ", op);
-        op.run(&mut password);
+        op.run(&mut password, false);
         //println!("{}", password.iter().cloned().collect::<String>());
+    }
+    println!("{}", password.into_iter().collect::<String>());
+
+    password = "fbgdceah".chars().collect::<Vec<char>>();
+    for op in ops.iter().rev() {
+        op.run(&mut password, true);
     }
     println!("{}", password.into_iter().collect::<String>());
 }
