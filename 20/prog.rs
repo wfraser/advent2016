@@ -56,20 +56,41 @@ fn main() {
         line.clear();
     }
 
+    let mut count = 0;
+    let mut first = true;
     let mut search = 0u32;
     loop {
         match blocked.contains(search) {
             Some(next) => {
                 if next < search {
-                    break;
+                    if first {
+                        println!("{}", search);
+                        first = false;
+                    }
+                    count += 1;
+                    if search == std::u32::MAX {
+                        break;
+                    }
+                    search += 1;
+                } else {
+                    if next == std::u32::MAX {
+                        break;
+                    }
+                    search = next + 1;
                 }
-                //println!("{}", next);
-                search = next + 1;
             },
             None => {
-                break;
+                if first {
+                    println!("{}", search);
+                    first = false;
+                }
+                count += 1;
+                if search == std::u32::MAX {
+                    break;
+                }
+                search += 1;
             }
         }
     }
-    println!("{}", search);
+    println!("{}", count);
 }
