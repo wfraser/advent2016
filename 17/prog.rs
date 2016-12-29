@@ -2,7 +2,7 @@ extern crate crypto;
 use crypto::digest::Digest;
 use crypto::md5::Md5;
 
-use std::io::{self, Write};
+use std::io;
 
 const DIM: u8 = 4;
 
@@ -95,37 +95,31 @@ fn walk(input: &str) -> String {
             }
         }
 
-        // do shit
         let direction = current.directions.pop().expect("empty direction vec");
         let newpos = direction.apply(&current.pos);
         if newpos.0 == DIM - 1 && newpos.1 == DIM - 1 {
-            println!("success: {}", current.walk);
-            best_walk = current.walk;
-            if stack.is_empty() {
-                return best_walk;
-            } else {
-                current = stack.pop().unwrap();
-            }
-        } else if best_walk.is_empty() || current.walk.len() < best_walk.len() {
-            let mut newctx = Context {
-                pos: newpos,
-                walk: current.walk.clone(),
-                directions: vec![],
-            };
-            newctx.walk.push(direction.as_char());
-            newctx.directions = unlocked_directions(input, &newctx.pos, &newctx.walk);
-            println!("{:?} takes us to {:?} with {:?}", direction, newctx.pos, newctx.directions);
+            best_walk = current.walk.clone();
+            best_walk.push(direction.as_char());
+            println!("success: {} ({})", best_walk, best_walk.len());
+            current.directions.clear(); // trigger a pop at the top of the loop.
+        } else if best_walk.is_empty() || current.walk.len() < best_walk.len() - 2 {
+            let mut new_walk = current.walk.clone();
+            new_walk.push(direction.as_char());
 
-            if !newctx.directions.is_empty() {
-                stack.push(std::mem::replace(&mut current, newctx));
+            let new_dirs = unlocked_directions(input, &newpos, &new_walk);
+            println!("{:?} takes us to {:?} with {:?} open", direction, newpos, new_dirs);
+
+            if !new_dirs.is_empty() {
+                let old_ctx = std::mem::replace(&mut current, Context {
+                    pos: newpos,
+                    walk: new_walk,
+                    directions: new_dirs,
+                });
+                stack.push(old_ctx);
             }
         } else {
             println!("useless; turning back from {:?}", current);
-            if stack.is_empty() {
-                return best_walk;
-            } else {
-                current = stack.pop().unwrap();
-            }
+            current.directions.clear(); // trigger a pop at the top of the loop.
         }
     }
 }
@@ -133,5 +127,6 @@ fn walk(input: &str) -> String {
 fn main() {
     let mut input = String::new();
     io::stdin().read_line(&mut input).unwrap();
-    println!("{}", walk(&input));
+    let best = walk(&input);
+    println!("{} ({})", best.len(), best);
 }
