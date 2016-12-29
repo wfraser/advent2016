@@ -46,31 +46,37 @@ fn main() {
         line.pop();
     }
 
-    let mut row = line.chars().map(|c| {
+    let mut rows = Vec::<Vec<Tile>>::new();
+    rows.push(line.chars().map(|c| {
         match c {
             '^' => Tile::Trap,
             '.' => Tile::Safe,
             _ => panic!("invalid input {:?}", c)
         }
-    }).collect::<Vec<Tile>>();
+    }).collect());
 
     print!("row 0: ");
-    print_row(&row);
+    print_row(rows.last().unwrap());
 
-    for i in 1..41 {
+    for i in 1..40 {
         let mut new_row = vec![];
-        for pos in 0..row.len() {
-            new_row.push(next_tile(pos, &row));
+        {
+            let old_row = rows.last().unwrap();
+            for pos in 0..old_row.len() {
+                new_row.push(next_tile(pos, old_row));
+            }
         }
         print!("row {}: ", i);
         print_row(&new_row);
-        std::mem::replace(&mut row, new_row);
+        rows.push(new_row);
     }
 
     let mut sum = 0;
-    for tile in row {
-        if !tile.is_trap() {
-            sum += 1;
+    for row in rows {
+        for tile in row {
+            if !tile.is_trap() {
+                sum += 1;
+            }
         }
     }
     println!("{}", sum);
