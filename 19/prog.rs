@@ -1,30 +1,40 @@
+use std::collections::HashMap;
 use std::io;
 
-struct Elf(u32);
+#[derive(Debug)]
+struct Elf {
+    gifts: u32,
+    next: u32,
+}
 
 fn white_elephant(n: u32) -> u32 {
-    let mut elves = (0..n).map(|_| Elf(1)).collect::<Vec<Elf>>();
+    let mut elves = HashMap::<u32, Elf>::with_capacity(n as usize);
+    for i in 0..n {
+        elves.insert(i, Elf {
+            gifts: 1,
+            next: (i+1)%n,
+        });
+    }
+
+    let mut i = 0;
     loop {
-        for i in 0 .. n as usize {
-            let elf_gifts = elves.get(i).unwrap().0;
-            if elf_gifts == 0 {
-                //println!("elf {} has none; skipping", i+1);
-                continue;
-            } else if elf_gifts == n {
-                return i as u32;
-            }
-            let mut steal_from = (i + 1) % (n as usize);
-            while steal_from != i {
-                let stolen = std::mem::replace(&mut elves.get_mut(steal_from).unwrap().0, 0);
-                if stolen == 0 {
-                    steal_from = (steal_from + 1) % (n as usize);
-                    continue;
-                }
-                //println!("{} steals {} from {}", i+1, stolen, steal_from+1);
-                elves.get_mut(i).unwrap().0 += stolen;
-                break;
-            }
+        let (elf_gifts, next) = match elves.get(&i) {
+            Some(elf) => (elf.gifts, elf.next),
+            None => panic!("expected elf {}, but didn't find it", i)
+        };
+
+        if elf_gifts == 0 {
+            panic!("unexpected elf with no gifts");
+        } else if elf_gifts == n {
+            return i;
         }
+
+        let stolen = elves.remove(&next).expect("not found");
+        let elf = elves.get_mut(&i).unwrap();
+        //println!("{} steals {} from {}", i+1, stolen.gifts, next+1);
+        elf.gifts += stolen.gifts;
+        elf.next = stolen.next;
+        i = elf.next;
     }
 }
 
