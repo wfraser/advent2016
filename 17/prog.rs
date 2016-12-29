@@ -43,8 +43,8 @@ impl Direction {
 
 fn unlocked(c: char) -> bool {
     match c {
-        '0'...'9' | 'a' => true,
-        'b'...'f' => false,
+        '0'...'9' | 'a' => false,
+        'b'...'f' => true,
         _ => panic!("unexpected character in hash: {:?}", c)
     }
 }
@@ -127,6 +127,6 @@ fn walk(input: &str) -> String {
 fn main() {
     let mut input = String::new();
     io::stdin().read_line(&mut input).unwrap();
-    let best = walk(&input);
-    println!("{} ({})", best.len(), best);
+    let best = walk(input.trim());
+    println!("{} ({})", best, best.len());
 }
