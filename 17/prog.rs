@@ -65,8 +65,13 @@ fn unlocked_directions(input: &str, pos: &Coord, walk: &str) -> Vec<Direction> {
     directions
 }
 
-fn walk(input: &str) -> String {
+/// Find the shortest (and optionally longest) paths through the puzzle with the given starting
+/// key.
+/// If `optimize` is true, optimize for the shortest path case. If false, also find the longest
+/// path.
+fn walk(input: &str, optimize: bool) -> (String, String) {
     let mut best_walk = String::new();
+    let mut worst_walk = String::new();
 
     #[derive(Debug)]
     struct Context {
@@ -83,31 +88,41 @@ fn walk(input: &str) -> String {
     };
 
     loop {
-        println!("{:?}", current);
+        //println!("{:?}", current);
 
         while current.directions.is_empty() {
             if stack.is_empty() {
-                return best_walk;
+                return (best_walk, worst_walk);
             } else {
                 current = stack.pop().unwrap();
-                println!("popping stack");
-                println!("{:?}", current);
+                //println!("popping stack");
+                //println!("{:?}", current);
             }
         }
 
         let direction = current.directions.pop().expect("empty direction vec");
         let newpos = direction.apply(&current.pos);
         if newpos.0 == DIM - 1 && newpos.1 == DIM - 1 {
-            best_walk = current.walk.clone();
-            best_walk.push(direction.as_char());
-            println!("success: {} ({})", best_walk, best_walk.len());
-            current.directions.clear(); // trigger a pop at the top of the loop.
-        } else if best_walk.is_empty() || current.walk.len() < best_walk.len() - 2 {
+
+            if best_walk.is_empty() || current.walk.len() + 1 < best_walk.len() {
+                best_walk = current.walk.clone();
+                best_walk.push(direction.as_char());
+            }
+            if worst_walk.is_empty() || current.walk.len() + 1 > worst_walk.len() {
+                worst_walk = current.walk.clone();
+                worst_walk.push(direction.as_char());
+            }
+
+            if optimize {
+                current.directions.clear(); // trigger a pop at the top of the loop.
+            }
+
+        } else if !optimize || best_walk.is_empty() || current.walk.len() < best_walk.len() - 2 {
             let mut new_walk = current.walk.clone();
             new_walk.push(direction.as_char());
 
             let new_dirs = unlocked_directions(input, &newpos, &new_walk);
-            println!("{:?} takes us to {:?} with {:?} open", direction, newpos, new_dirs);
+            //println!("{:?} takes us to {:?} with {:?} open", direction, newpos, new_dirs);
 
             if !new_dirs.is_empty() {
                 let old_ctx = std::mem::replace(&mut current, Context {
@@ -117,8 +132,8 @@ fn walk(input: &str) -> String {
                 });
                 stack.push(old_ctx);
             }
-        } else {
-            println!("useless; turning back from {:?}", current);
+        } else if optimize {
+            //println!("useless; turning back from {:?}", current);
             current.directions.clear(); // trigger a pop at the top of the loop.
         }
     }
@@ -127,6 +142,7 @@ fn walk(input: &str) -> String {
 fn main() {
     let mut input = String::new();
     io::stdin().read_line(&mut input).unwrap();
-    let best = walk(input.trim());
+    let (best, worst) = walk(input.trim(), false);
     println!("{} ({})", best, best.len());
+    println!("{} ({})", worst, worst.len());
 }
