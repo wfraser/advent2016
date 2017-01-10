@@ -1,70 +1,71 @@
-use std::collections::{HashMap, VecDeque};
-use std::io;
+extern crate linked_list;
+use linked_list::LinkedList;
+
+fn generate_elves(n: u32) -> LinkedList<u32> {
+    let mut elves = LinkedList::<u32>::new();
+    for i in 1 .. n+1 {
+        elves.push_back(i);
+    }
+    elves
+}
 
 fn white_elephant(n: u32) -> u32 {
-    #[derive(Debug, Clone)]
-    struct Elf {
-        next: u32,
-    }
+    let mut elves = generate_elves(n);
+    {
+        let mut cursor = elves.cursor();
+        cursor.seek_forward(1);
+        
+        for _ in 0 .. n - 1 {
+            // steal from the next elf
+            if cursor.peek_next().is_none() {
+                // wrap around
+                cursor.seek_forward(1);
+            }
+            cursor.remove();
 
-    let mut elves = HashMap::<u32, Elf>::with_capacity(n as usize);
-    for i in 0..n {
-        elves.insert(i, Elf {
-            next: (i+1)%n,
-        });
-    }
-
-    let mut i = 0;
-    loop {
-        if elves.len() == 1 {
-            return i+1;
+            // advance to the next elf
+            if cursor.peek_next().is_none() {
+                cursor.seek_forward(2);
+            } else {
+                cursor.seek_forward(1);
+            }
         }
-
-        let elf = elves.get(&i).unwrap().clone();
-
-        let stolen = elves.remove(&elf.next).expect("not found");
-        let elf = elves.get_mut(&i).unwrap();
-        //println!("{} steals from {}", i+1, next+1);
-        elf.next = stolen.next;
-        i = elf.next;
     }
+    elves.front().cloned().unwrap()
 }
 
 fn white_elephant2(n: u32) -> u32 {
-    let mut left = VecDeque::<u32>::new();
-    let mut right = VecDeque::<u32>::new();
-    for i in 0..n {
-        let elf = i + 1;
-        if i <= n / 2 {
-            left.push_back(elf);
-        } else {
-            right.push_front(elf);
+    let mut elves = generate_elves(n);
+
+    {
+        let mut cursor = elves.cursor();
+        // seek to halfway around the circle to start.
+        cursor.seek_forward(n as usize / 2);
+
+        for i in 0 .. n - 1 {
+            if cursor.peek_next().is_none() {
+                cursor.seek_forward(1);
+            }
+            cursor.remove().unwrap();
+            
+            // if this removal didn't make the half-circle size shrink, advance by one
+            let last_size = (n - i) / 2;
+            let this_size = (n - i - 1) / 2;
+            if last_size == this_size {
+                if cursor.peek_next().is_none() {
+                    cursor.seek_forward(2);
+                } else {
+                    cursor.seek_forward(1);
+                }
+            }
         }
     }
-
-    while !left.is_empty() && !right.is_empty() {
-        //println!("L: {:?}", left);
-        //println!("R: {:?}", right);
-        let _stolen = if left.len() > right.len() {
-            left.pop_back().unwrap()
-        } else {
-            right.pop_back().unwrap()
-        };
-        //println!("removed {:?}", _stolen);
-        right.push_front(left.pop_front().unwrap());
-        left.push_back(right.pop_back().unwrap());
-    }
-
-    if left.is_empty() {
-        right[0]
-    } else {
-        left[0]
-    }
+    elves.front().cloned().unwrap() 
 }
 
 fn main() {
     let mut line = String::new();
-    io::stdin().read_line(&mut line).unwrap();
+    std::io::stdin().read_line(&mut line).unwrap();
     let n: u32 = line.trim().parse().expect("invalid input");
 
     println!("elf {} wins", white_elephant(n));
